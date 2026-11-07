@@ -1,0 +1,588 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.pageHeader {
+  margin-bottom: .1rem;
+}
+
+.controls,
+.filters,
+.scopeNav,
+.periodToggle,
+.facilityFilter {
+  display: flex;
+  align-items: center;
+}
+
+.controls {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .8rem 1.2rem;
+}
+
+.filters {
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+
+.scopeNav,
+.periodToggle {
+  gap: .18rem;
+  padding: .25rem;
+  border: 1px solid var(--line);
+  border-radius: .8rem;
+  background: var(--surface);
+}
+
+.scopeNav a,
+.periodToggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2rem;
+  padding: .35rem .78rem;
+  border: 0;
+  border-radius: .55rem;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.scopeNav a:hover,
+.periodToggle button:hover {
+  color: var(--ink);
+  background: var(--brand-soft);
+}
+
+.scopeNav a[aria-current="page"],
+.periodToggle button[aria-pressed="true"] {
+  color: var(--ink);
+  background: var(--brand-soft);
+}
+
+.scopeNav a[aria-current="page"] {
+  box-shadow: inset 0 -2px 0 var(--brand);
+}
+
+.scopeNav a:focus-visible,
+.periodToggle button:focus-visible,
+.facilityFilter select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.facilityFilter {
+  max-width: 100%;
+  min-height: 2.82rem;
+  gap: .35rem;
+  padding: .25rem .45rem .25rem .72rem;
+  border: 1px solid var(--line);
+  border-radius: .8rem;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 650;
+}
+
+.facilityFilter select {
+  min-width: 0;
+  min-height: 2rem;
+  padding: .25rem;
+  border: 0;
+  border-radius: .35rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  gap: 1.5rem;
+  padding: clamp(.95rem, 3.1vw, 2rem);
+  border: 1px solid #46346c;
+  border-radius: 1.3rem;
+  background:
+    radial-gradient(ellipse at 71% -50%, #603890 1%, transparent 62%),
+    radial-gradient(ellipse at 0 125%, #382552 0, transparent 67%),
+    linear-gradient(116deg, #161125, #211434 70%, #2a1742);
+  color: #fff;
+}
+
+.stage::before {
+  position: absolute;
+  z-index: -1;
+  top: -7rem;
+  right: -4rem;
+  width: 23rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, #d6b4ff16 0 1px, transparent 1px 22px);
+  opacity: .7;
+  pointer-events: none;
+  content: "";
+}
+
+.stageHeading,
+.stageLead,
+.stageMeta {
+  display: flex;
+  align-items: center;
+}
+
+.stageHeading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .8rem 1rem;
+}
+
+.stageLead {
+  min-width: 0;
+  gap: .72rem;
+}
+
+.stageLead > div { min-width: 0; }
+
+.trophyIcon {
+  display: grid;
+  flex: 0 0 2.9rem;
+  width: 2.9rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #e8c5ff45;
+  border-radius: .85rem;
+  background: #c79bff22;
+  color: #ebceff;
+}
+
+.trophyIcon svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.stageKicker {
+  margin: 0 0 .1rem;
+  color: #e4c5fa;
+  font-size: .69rem;
+  font-weight: 800;
+  letter-spacing: .11em;
+}
+
+.stageHeading h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.25rem, 3vw, 1.85rem);
+  line-height: 1.2;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+
+.stageMeta {
+  gap: .65rem;
+  color: #e0d4ed;
+  font-size: .8rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.demoBadge {
+  padding: .32rem .58rem;
+  border: 1px solid #dec4fb4a;
+  border-radius: 999px;
+  background: #dfc4ff1c;
+  color: #f2e3ff;
+  font-size: .73rem;
+  line-height: 1.3;
+}
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(.45rem, 2vw, .9rem);
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.podiumCard {
+  --medal-text: #ffedb9;
+  --medal-border: #edbe5c7a;
+  --medal-fill: #edbe5c30;
+  --card-fill: #ba8a3a28;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: .55rem;
+  min-width: 0;
+  min-height: 11.7rem;
+  padding: .85rem .45rem;
+  border: 1px solid var(--medal-border);
+  border-radius: 1rem;
+  background:
+    radial-gradient(ellipse at 50% -20%, var(--card-fill), transparent 84%),
+    #f4eaff0d;
+  text-align: center;
+}
+
+.podiumCard[data-rank="1"] {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 13rem;
+  box-shadow: inset 0 1px 0 #ffe2a14a, 0 .75rem 2rem #160c2040;
+}
+
+.podiumCard[data-rank="2"] {
+  --medal-text: #ddedff;
+  --medal-border: #abc8f46b;
+  --medal-fill: #9ac2ff24;
+  --card-fill: #a7c7fd20;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.podiumCard[data-rank="3"] {
+  --medal-text: #ffd8b8;
+  --medal-border: #eca67475;
+  --medal-fill: #f6ac7129;
+  --card-fill: #f29b5821;
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.medal {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.4rem;
+  padding: .13rem .52rem;
+  border: 1px solid var(--medal-border);
+  border-radius: 999px;
+  background: var(--medal-fill);
+  color: var(--medal-text);
+  font-size: .67rem;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.podiumAvatar {
+  display: grid;
+  width: clamp(2.55rem, 8vw, 3.4rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid var(--medal-border);
+  border-radius: 50%;
+  background: var(--medal-fill);
+  color: var(--medal-text);
+  font-size: clamp(.92rem, 2.4vw, 1.25rem);
+  font-weight: 850;
+  letter-spacing: -.03em;
+}
+
+.podiumCard[data-rank="1"] .podiumAvatar {
+  width: clamp(2.9rem, 9vw, 3.9rem);
+}
+
+.podiumIdentity {
+  display: grid;
+  gap: .13rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
+
+.podiumIdentity strong {
+  color: #fff;
+  font-size: clamp(.78rem, 2.8vw, 1.06rem);
+  font-weight: 800;
+}
+
+.podiumIdentity span {
+  color: #dacde7;
+  font-size: clamp(.65rem, 2.1vw, .79rem);
+}
+
+.coinAmount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.podiumCard .coinAmount {
+  color: var(--medal-text);
+  font-size: clamp(.85rem, 3.4vw, 1.55rem);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.coinUnit {
+  font-size: .68em;
+  font-weight: 700;
+}
+
+.listPanel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.05rem;
+  background: var(--surface);
+}
+
+.listHeading {
+  padding: 1.15rem 1.2rem .85rem;
+}
+
+.listHeading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.12rem;
+  letter-spacing: -.025em;
+}
+
+.listHeading p {
+  margin: .2rem 0 0;
+  color: var(--muted);
+  font-size: .83rem;
+}
+
+.rankTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ink);
+  font-size: .9rem;
+  text-align: left;
+}
+
+.rankTable th,
+.rankTable td {
+  padding: .66rem .75rem;
+  border-top: 1px solid var(--line);
+}
+
+.rankTable th {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.rankTable th:first-child,
+.rankTable td:first-child {
+  width: 13%;
+  padding-left: 1.2rem;
+}
+
+.rankTable th:last-child,
+.rankTable td:last-child {
+  padding-right: 1.2rem;
+  text-align: right;
+}
+
+.rankNumber {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.tableIdentity {
+  display: flex;
+  align-items: center;
+  gap: .66rem;
+}
+
+.tableIdentity > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tableAvatar {
+  display: grid;
+  flex: 0 0 2rem;
+  width: 2rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: .55rem;
+  background: #eae0ff;
+  color: #542c89;
+  font-size: .74rem;
+  font-weight: 850;
+}
+
+.tableAvatar[data-facility="b"] {
+  background: #d9f1ee;
+  color: #0a5b58;
+}
+
+.tableAvatar[data-facility="c"] {
+  background: #ffe7d8;
+  color: #8a471b;
+}
+
+.tableAvatar[data-facility="d"] {
+  background: #dceafa;
+  color: #275480;
+}
+
+.mobileFacility {
+  display: none;
+}
+
+.stageStatus p,
+.viewer p {
+  margin: 0;
+}
+
+.stageStatus a,
+.stageStatus button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.4rem;
+  margin-top: .65rem;
+  padding: .35rem .8rem;
+  border: 1px solid #dec4fb70;
+  border-radius: .55rem;
+  background: #dfc4ff1c;
+  color: #fff;
+  font-weight: 700;
+}
+
+.stageStatus a:hover,
+.stageStatus button:hover {
+  background: #dfc4ff30;
+}
+
+.stageStatus .updatedAt {
+  color: #e0d4ed;
+  font-size: .8rem;
+}
+
+.stageStatus p + .updatedAt,
+.stageStatus button + .updatedAt {
+  margin-top: .4rem;
+}
+
+.viewer {
+  display: grid;
+  gap: .25rem;
+  padding: .85rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: .9rem;
+  background: var(--surface);
+}
+
+.viewer p {
+  color: var(--muted);
+}
+
+.note {
+  display: flex;
+  align-items: baseline;
+  gap: .45rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.note > span {
+  color: var(--brand);
+  font-size: 1.06rem;
+  font-weight: 800;
+}
+
+@media (max-width: 38rem) {
+  .page {
+    gap: 1rem;
+  }
+
+  .stage {
+    gap: 1.15rem;
+    border-radius: 1rem;
+  }
+
+  .podiumCard {
+    min-height: 9rem;
+    border-radius: .75rem;
+  }
+
+  .podiumCard[data-rank="1"] {
+    min-height: 10rem;
+  }
+
+  .rankTable th,
+  .rankTable td {
+    padding-right: .5rem;
+    padding-left: .5rem;
+  }
+
+  .rankTable th:first-child,
+  .rankTable td:first-child {
+    width: 15%;
+    padding-left: .8rem;
+  }
+
+  .rankTable th:last-child,
+  .rankTable td:last-child {
+    padding-right: .8rem;
+  }
+
+  .rankTable .coinAmount {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .listHeading {
+    padding-inline: .8rem;
+  }
+
+  .facilityColumn {
+    display: none;
+  }
+
+  .mobileFacility {
+    display: block;
+    margin-top: .12rem;
+    color: var(--muted);
+    font-size: .73rem;
+  }
+}
+
+@media (max-width: 22rem) {
+  .filters {
+    gap: .35rem;
+  }
+
+  .facilityFilter {
+    padding-inline: .32rem;
+  }
+
+  .facilityFilter > span {
+    position: absolute;
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .scopeNav a,
+  .periodToggle button {
+    padding-inline: .5rem;
+  }
+}

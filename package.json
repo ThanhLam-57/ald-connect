@@ -1,0 +1,27 @@
+{
+  "name": "ald-connect",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3017",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3017",
+    "bootstrap:admin": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/bootstrap-admin.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.2.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3"
+  }
+}

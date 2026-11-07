@@ -1,0 +1,58 @@
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, .44fr);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 23px;
+  background: linear-gradient(115deg, #2a1556, #4a2398 64%, #6935bc);
+  color: #fff;
+  padding: clamp(22px, 4vw, 46px);
+  margin-bottom: 30px;
+  min-height: 246px;
+}
+.heroContent { position: relative; z-index: 1; }
+.heroKicker { display: flex; align-items: center; gap: 8px; color: #e6d9ff; letter-spacing: .12em; font-size: 11px; font-weight: 750; }
+.heroKicker span { display: inline-block; width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: #d7fa85; }
+.hero h1 { font-size: clamp(2.15rem, 4.9vw, 3.65rem); line-height: 1.1; letter-spacing: -.06em; margin: 12px 0; }
+.hero p:not(.heroKicker) { color: #f2ebff; max-width: 44ch; margin: 0 0 22px; }
+.heroLink { display: inline-flex; align-items: center; gap: 12px; border-radius: 10px; background: #dbf995; color: #2e2146; padding: 11px 14px; min-height: 44px; font-size: 13px; font-weight: 750; }
+.heroLink:hover { background: #edffc5; }
+.heroArt { display: grid; place-items: center; position: relative; min-height: 176px; }
+.heroArt::before, .heroArt::after { content: ""; position: absolute; width: 210px; height: 210px; border-radius: 32px; transform: rotate(-22deg); border: 1px solid #c7b1ff66; }
+.heroArt::after { width: 164px; height: 164px; transform: rotate(14deg); background: #9f71e430; }
+.heroArt > span { color: #f8f5ff; position: relative; z-index: 1; font-size: clamp(5rem, 10vw, 8rem); line-height: 1; font-weight: 850; letter-spacing: -.1em; }
+.heroArt > span > span { color: #d7fa85; }
+.columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, .38fr); gap: 22px; align-items: start; }
+.sectionHeading { display: flex; flex-wrap: wrap; gap: 4px 11px; align-items: baseline; }
+.sectionHeading h2 { margin: 0; font-size: 1.45rem; letter-spacing: -.035em; }
+.sectionHeading span { color: var(--muted); font-size: 12px; }
+.filters { display: flex; gap: 7px; flex-wrap: wrap; margin: 14px 0; }
+.filters button, .ack { color: var(--muted); background: var(--surface); border: 1px solid var(--line); padding: 7px 13px; min-height: 40px; border-radius: 9px; font-size: 12px; font-weight: 700; }
+.filters button[aria-pressed="true"] { color: var(--brand); background: var(--brand-soft); border-color: #e1d6f9; }
+.filters button:hover, .ack:not(:disabled):hover { border-color: #ba9aee; }
+.feed, .rail { display: grid; gap: 12px; }
+.post, .railCard { padding: clamp(15px, 2vw, 22px); background: var(--surface); border: 1px solid var(--line); border-radius: 15px; }
+.postMeta { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; font-size: 12px; color: var(--muted); }
+.badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 750; }
+.important { color: #764b0e; background: #fff0d2; }
+.kudos { color: var(--brand); background: var(--brand-soft); }
+.post h3 { margin: 10px 0 5px; font-size: 1rem; }
+.post p, .railCard p { margin: 0; font-size: 14px; color: var(--muted); }
+.ack { color: var(--brand); margin-top: 14px; }
+.ack:disabled { color: var(--success); background: #ecfaf4; border-color: #d3eee2; }
+.railIcon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--brand-soft); color: var(--brand); font-size: 20px; font-weight: 750; }
+.rankIcon { background: #ecf7db; color: #3f6923; }
+.railCard h2 { margin: 10px 0 4px; font-size: 1rem; }
+.railCard a { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 750; color: var(--brand); }
+.railCard a:hover { text-decoration: underline; }
+
+@media (max-width: 740px) {
+  .columns { grid-template-columns: minmax(0, 1fr); }
+  .rail { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+}
+
+@media (max-width: 510px) {
+  .hero { display: block; min-height: unset; border-radius: 17px; margin-bottom: 21px; }
+  .heroArt { position: absolute; z-index: -1; opacity: .21; right: -22px; bottom: -38px; width: 155px; }
+}

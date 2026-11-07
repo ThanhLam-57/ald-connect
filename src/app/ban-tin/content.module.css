@@ -1,0 +1,18 @@
+.feed {
+  margin-top: 14px;
+}
+
+.article {
+  overflow-wrap: anywhere;
+}
+
+.body {
+  white-space: pre-wrap;
+}
+
+.article .readCount {
+  margin-top: 14px;
+  color: var(--brand);
+  font-size: .83rem;
+  font-weight: 700;
+}
