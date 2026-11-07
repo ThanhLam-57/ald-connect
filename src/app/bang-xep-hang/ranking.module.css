@@ -478,6 +478,50 @@
   margin-top: .4rem;
 }
 
+.personalProgress {
+  display: grid;
+  gap: .8rem;
+  min-width: 0;
+}
+
+.personalProgress h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.progressMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: .7rem;
+  margin: 0;
+}
+
+.progressMetrics > div {
+  min-width: 0;
+  padding: .8rem .95rem;
+  border: 1px solid #dec4fb45;
+  border-radius: .75rem;
+  background: #dfc4ff12;
+}
+
+.progressMetrics dt {
+  color: #e0d4ed;
+  font-size: .8rem;
+  font-weight: 650;
+}
+
+.progressMetrics dd {
+  margin: .25rem 0 0;
+  color: #fff;
+  font-size: clamp(1rem, 4vw, 1.55rem);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.progressMetrics .coinAmount {
+  white-space: normal;
+}
+
 .viewer {
   display: grid;
   gap: .25rem;

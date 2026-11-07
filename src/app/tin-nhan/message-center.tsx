@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { ConversationHistory, ConversationSummary, DirectMessage, MessageContact, MessagePeer } from "../../lib/messages";
+import { useLiveUpdates } from "../live-updates";
 import { MessageAvatar, MessageIcon, MessageInbox } from "./inbox";
 import styles from "./page.module.css";
 
 const endpoint = `${process.env.NEXT_PUBLIC_CONNECT_BASE_PATH ?? ""}/api/tin-nhan`;
+const INBOX_POLL_MS = 8000;
+const THREAD_POLL_MS = 4000;
+const CONTACT_REFRESH_MS = 15000;
+const INCREMENTAL_PAGE_SIZE = 40; // The history API returns up to 40 messages per request.
 const displayTime = new Intl.DateTimeFormat("vi-VN", {
   timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh",
 });
@@ -59,6 +64,26 @@ function displayError(error: unknown) {
   return error instanceof RequestError ? error.message : "Kết nối bị gián đoạn. Vui lòng thử lại.";
 }
 
+function queueRefresh(signal: AbortSignal, update: () => Promise<boolean | void>) {
+  let pending = false;
+  let inFlight = false;
+  const canRefresh = () => !signal.aborted && document.visibilityState !== "hidden";
+  return async function refresh() {
+    if (!canRefresh()) return;
+    pending = true;
+    if (inFlight) return;
+    inFlight = true;
+    try {
+      while (pending && canRefresh()) {
+        pending = false;
+        if (await update()) pending = true;
+      }
+    } finally {
+      inFlight = false;
+    }
+  };
+}
+
 export function MessageCenter({ accountId, initial, initialInbox, initialContacts, initialError, maxLength }: Props) {
   const [chat, setChat] = useState(initial);
   const [inbox, setInbox] = useState(initialInbox);
@@ -82,8 +107,17 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
   const readRevision = useRef(0);
   const readInFlight = useRef(false);
   const readLocallyThrough = useRef(0);
-  const inboxInFlight = useRef(false);
+  const connectedRef = useRef(false);
+  const refreshInbox = useRef<(() => void) | null>(null);
+  const refreshThread = useRef<(() => void) | null>(null);
   const currentPeerId = chat?.peer.id;
+
+  const refreshLive = useCallback(() => {
+    refreshInbox.current?.();
+    refreshThread.current?.();
+  }, []);
+  const { connected } = useLiveUpdates("messages", refreshLive, { fallbackIntervalMs: 0 });
+  useEffect(() => { connectedRef.current = connected; }, [connected]);
 
   const updateInbox = useCallback((id: string, peer: MessagePeer, latest?: DirectMessage, unread?: number) => {
     setInbox((current) => {
@@ -97,13 +131,11 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
     });
   }, []);
 
-  const reloadInbox = useCallback(async (signal?: AbortSignal) => {
-    if (inboxInFlight.current || signal?.aborted || document.visibilityState === "hidden") return;
-    inboxInFlight.current = true;
+  const reloadInbox = useCallback(async (signal: AbortSignal) => {
     const revision = readRevision.current;
     try {
       const data = await request<{ conversations: ConversationSummary[]; contacts: MessageContact[] }>("", { signal });
-      if (signal?.aborted) return;
+      if (signal.aborted) return;
       setContacts(data.contacts);
       setInbox((previous) => {
         if (revision === readRevision.current) return data.conversations;
@@ -112,7 +144,7 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
       });
       setInboxNotice("");
     } catch (error) {
-      if (signal?.aborted) return;
+      if (signal.aborted) return;
       if (error instanceof RequestError && [401, 403].includes(error.status)) {
         setInbox([]);
         setContacts([]);
@@ -123,36 +155,41 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
       } else {
         setInboxNotice(displayError(error));
       }
-    } finally {
-      inboxInFlight.current = false;
     }
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
-    const poll = () => { void reloadInbox(controller.signal); };
-    const timer = window.setInterval(poll, 8000);
-    document.addEventListener("visibilitychange", poll);
+    let lastRefresh = Date.now();
+    const requestInbox = queueRefresh(controller.signal, () => {
+      lastRefresh = Date.now();
+      return reloadInbox(controller.signal);
+    });
+    const poll = () => { void requestInbox(); };
+    refreshInbox.current = poll;
+    const timer = window.setInterval(() => {
+      if (!connectedRef.current || Date.now() - lastRefresh >= CONTACT_REFRESH_MS) poll();
+    }, INBOX_POLL_MS);
     return () => {
       controller.abort();
+      refreshInbox.current = null;
       window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
     };
   }, [reloadInbox]);
 
   useEffect(() => {
-    if (!currentPeerId) return;
+    const peerId = currentPeerId;
+    if (!peerId) return;
     const controller = new AbortController();
-    let inFlight = false;
+    let retry = false;
 
-    async function poll() {
-      if (inFlight || controller.signal.aborted || document.visibilityState === "hidden") return;
-      inFlight = true;
+    const requestThread = queueRefresh(controller.signal, async () => {
       const revision = readRevision.current;
       try {
-        const params = new URLSearchParams({ nguoi: currentPeerId!, sau: String(polledThrough.current) });
+        const params = new URLSearchParams({ nguoi: peerId, sau: String(polledThrough.current) });
         const { history } = await request<{ history: ConversationHistory }>(`?${params}`, { signal: controller.signal });
         if (controller.signal.aborted) return;
+        retry = false;
         const latest = history.messages.at(-1);
         if (latest) polledThrough.current = latest.id;
         const sameRead = revision === readRevision.current;
@@ -166,6 +203,7 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
         } : previous);
         if (history.id) updateInbox(history.id, history.peer, latest, sameRead ? history.unread : undefined);
         setNotice("");
+        return history.messages.length === INCREMENTAL_PAGE_SIZE;
       } catch (error) {
         if (controller.signal.aborted) return;
         if (error instanceof RequestError && [401, 403, 404].includes(error.status)) {
@@ -173,20 +211,23 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
           setChat(null);
           setDraft("");
           setFailedDraft(null);
-          setInbox((current) => error.status === 404 ? current.filter((entry) => entry.peer.id !== currentPeerId) : []);
+          setInbox((current) => error.status === 404 ? current.filter((entry) => entry.peer.id !== peerId) : []);
+        } else {
+          retry = true;
         }
         setNotice(displayError(error));
-      } finally {
-        inFlight = false;
       }
-    }
+    });
 
-    const timer = window.setInterval(poll, 4000);
-    document.addEventListener("visibilitychange", poll);
+    const poll = () => { void requestThread(); };
+    refreshThread.current = poll;
+    const timer = window.setInterval(() => {
+      if (!connectedRef.current || retry) poll();
+    }, THREAD_POLL_MS);
     return () => {
       controller.abort();
+      refreshThread.current = null;
       window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
     };
   }, [currentPeerId, updateInbox]);
 
@@ -306,7 +347,7 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
   return (
     <div className={styles.layout} ref={frame} data-mobile-chat={chat ? "active" : undefined}>
       <MessageInbox accountId={accountId} conversations={inbox} contacts={contacts} activeId={chat?.id}
-        notice={inboxNotice} refresh={() => { void reloadInbox(); }} />
+        notice={inboxNotice} refresh={() => refreshInbox.current?.()} />
 
       <section className={styles.chat} aria-labelledby="chat-heading" data-empty={!chat && !notice}>
         {chat ? (

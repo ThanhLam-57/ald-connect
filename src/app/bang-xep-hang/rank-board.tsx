@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { RankEntry, RankScope } from "./ranking-data";
+import type { RankEntry, RankScope, RankViewer } from "./ranking-data";
 import { useLeaderboard } from "./use-leaderboard";
 import styles from "./ranking.module.css";
 
@@ -105,6 +105,30 @@ function RankList({ entries }: { entries: DisplayRank[] }) {
   );
 }
 
+function PersonalProgress({
+  viewer,
+  limit,
+}: {
+  viewer: Extract<RankViewer, { inTop: false }>;
+  limit: number;
+}) {
+  return (
+    <section className={styles.personalProgress} aria-labelledby="personal-progress-title">
+      <h3 id="personal-progress-title">Thành tích của bạn</h3>
+      <dl className={styles.progressMetrics}>
+        <div>
+          <dt>Số xu tháng này</dt>
+          <dd>{viewer.coins === null ? "Chưa xác định" : <CoinAmount coins={viewer.coins} />}</dd>
+        </div>
+        <div>
+          <dt>Cần thêm để vào Top {limit}</dt>
+          <dd>{viewer.coinsToTop === null ? "Chưa xác định" : <CoinAmount coins={viewer.coinsToTop} />}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
 export function RankBoard({ scope, canChooseBranch = false }: { scope: RankScope; canChooseBranch?: boolean }) {
   const [branchId, setBranchId] = useState("");
   const isFacility = scope === "facility";
@@ -112,12 +136,12 @@ export function RankBoard({ scope, canChooseBranch = false }: { scope: RankScope
   const { current, retry, branches } = useLeaderboard(endpoint, scope, branchId);
   const data = current?.data;
   const status = current?.status;
+  const viewer = data?.viewer;
   const ranking: DisplayRank[] = (data?.entries ?? []).map((entry) => ({
     ...entry,
     initials: initialsFor(entry.name),
   }));
   const [year, month] = data?.businessDate.split("-") ?? [];
-  const viewer = data?.viewer;
   const facilityDescription = canChooseBranch
     ? "Chọn cơ sở để xem ba vị trí dẫn đầu doanh số xu."
     : "Ba gương mặt dẫn đầu doanh số xu tại cơ sở của bạn.";
@@ -171,6 +195,7 @@ export function RankBoard({ scope, canChooseBranch = false }: { scope: RankScope
         </div>
 
         {ranking.length > 0 && <Podium entries={ranking.slice(0, 3)} />}
+        {viewer?.inTop === false && <PersonalProgress viewer={viewer} limit={isFacility ? 3 : 10} />}
         <div className={styles.stageStatus} aria-live="polite">
             {!current && <p>Đang tải bảng xếp hạng…</p>}
             {data?.branchBreakdownUnavailable && <p>Workforce chưa cung cấp số xu tách theo cơ sở cho kỳ này.</p>}
@@ -191,7 +216,7 @@ export function RankBoard({ scope, canChooseBranch = false }: { scope: RankScope
 
       {!isFacility && ranking.length > 3 && <RankList entries={ranking.slice(3)} />}
 
-      {viewer && <div className={styles.viewer}>
+      {viewer?.inTop === true && <div className={styles.viewer}>
         <strong>Thành tích của bạn</strong>
         <p>Hạng {viewer.rank} · <CoinAmount coins={viewer.coins} /></p>
         {viewer.nextCoins !== null && <p>
@@ -201,7 +226,7 @@ export function RankBoard({ scope, canChooseBranch = false }: { scope: RankScope
         </p>}
       </div>}
       {data && <p className={styles.note}>
-        <span aria-hidden="true">ⓘ</span> Số liệu tháng hiện tại từ Workforce. Bảng hiển thị nhân viên có doanh số xu.
+        <span aria-hidden="true">ⓘ</span> Số liệu tháng hiện tại từ Workforce.
       </p>}
     </section>
   );

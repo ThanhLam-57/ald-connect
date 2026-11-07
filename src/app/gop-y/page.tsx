@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RefreshOnLiveUpdates } from "../live-updates";
 import { requireActiveAccount } from "../../lib/auth";
 import {
   contentDate,
@@ -25,7 +26,14 @@ export default async function FeedbackPage({
 }) {
   const account = await requireActiveAccount();
   const params = await searchParams;
-  if (account.role === "ADMIN") return <FeedbackReview account={account} params={params} />;
+  if (account.role === "ADMIN") {
+    return (
+      <>
+        <RefreshOnLiveUpdates topic="feedback" />
+        <FeedbackReview account={account} params={params} />
+      </>
+    );
+  }
 
   const { ticket, notice } = params;
   const isHcns = account.role === "HCNS";
@@ -38,6 +46,7 @@ export default async function FeedbackPage({
 
   return (
     <div className={styles.page}>
+      <RefreshOnLiveUpdates topic="feedback" />
       <header className={styles.heading}>
         <p className="page-kicker">KÊNH NỘI BỘ / HÀNH CHÍNH NHÂN SỰ</p>
         <h1 className="page-title">Góp ý HCNS</h1>

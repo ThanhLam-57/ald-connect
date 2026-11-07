@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RefreshOnLiveUpdates } from "./live-updates";
 import type { Account } from "../lib/auth";
 import { contentDate, listAnnouncements } from "../lib/content";
 import { confirmAnnouncementRead } from "./ban-tin/actions";
@@ -10,6 +11,7 @@ export function NewsFeed({ account }: { account: Account }) {
 
   return (
     <section aria-labelledby="news-heading">
+      <RefreshOnLiveUpdates topic="announcements" />
       <div className={styles.sectionHeading}>
         <h2 id="news-heading">Bản tin ALD</h2>
         {account.role === "HCNS" && <Link href="/ban-tin#publish-heading">Đăng thông báo</Link>}

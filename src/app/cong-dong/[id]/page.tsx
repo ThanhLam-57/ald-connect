@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RefreshOnLiveUpdates } from "../../live-updates";
 import { notFound } from "next/navigation";
 import { recordAdminReview } from "../../../lib/admin-review";
 import { requireActiveAccount } from "../../../lib/auth";
@@ -31,6 +32,7 @@ export default async function CommunityThread({
 
   return (
     <div className={styles.page}>
+      <RefreshOnLiveUpdates topic="community" />
       <header>
         <Link href={communityFeedPath} className={styles.back}>← Cộng đồng ALD</Link>
         <h1 className="page-title">Thảo luận</h1>

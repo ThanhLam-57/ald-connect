@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { Leaderboard, RankBranch, RankScope } from "../app/bang-xep-hang/ranking-data";
+import type { Leaderboard, RankBranch, RankScope, RankViewer } from "../app/bang-xep-hang/ranking-data";
 import { getDatabase, transaction } from "./database";
 
 type RevenueItem = {
@@ -17,6 +17,12 @@ type Snapshot = {
   branches: RankBranch[];
   items: RevenueItem[];
 };
+
+function employeeCoins(item: RevenueItem, branch: RankBranch | null): bigint | null {
+  if (!branch || item.coins === 0n) return item.coins;
+  if (!item.branches.some(({ id }) => id === branch.id)) return 0n;
+  return item.branches.length === 1 ? item.coins : null;
+}
 
 type CacheEntry = {
   nextAttemptAt: number;
@@ -217,13 +223,30 @@ export async function readWorkforceLeaderboard(
   const branchBreakdownUnavailable = relevant.some(
     (item) => item.branches.length > 1 && (thirdCoins === undefined || item.coins >= thirdCoins),
   );
-  const selected = scope === "company"
-    ? positive.slice(0, 10)
-    : branchBreakdownUnavailable ? [] : facilityCandidates.slice(0, 3);
-  const viewerRows = scope === "company"
-    ? positive
-    : relevant.length === facilityCandidates.length ? facilityCandidates : [];
-  const viewerIndex = viewerRows.findIndex((item) => item.staffCode === staffCode);
+  const topSize = scope === "company" ? 10 : 3;
+  const ranked = scope === "company" ? positive : facilityCandidates;
+  const top = branchBreakdownUnavailable ? [] : ranked.slice(0, topSize);
+  let viewer: RankViewer | null = null;
+
+  if (staffCode !== null) {
+    const topIndex = top.findIndex((item) => item.staffCode === staffCode);
+    if (topIndex >= 0) {
+      viewer = {
+        inTop: true,
+        rank: topIndex + 1,
+        coins: top[topIndex].coins.toString(),
+        nextCoins: top[topIndex - 1]?.coins.toString() ?? null,
+      };
+    } else {
+      const own = snapshot.items.find((item) => item.staffCode === staffCode);
+      const coins = own ? employeeCoins(own, branch) : null;
+      const cutoff = top[topSize - 1]?.coins;
+      const coinsToTop = !stale && !branchBreakdownUnavailable && coins !== null
+        ? (cutoff === undefined ? 1n : cutoff - coins + 1n).toString()
+        : null;
+      viewer = { inTop: false, coins: coins?.toString() ?? null, coinsToTop };
+    }
+  }
 
   return {
     data: {
@@ -232,17 +255,13 @@ export async function readWorkforceLeaderboard(
       asOf: snapshot.generatedAt,
       businessDate: snapshot.businessDate,
       branch,
-      entries: selected.map((item, index) => ({
+      entries: top.map((item, index) => ({
         rank: index + 1,
         name: item.name,
         branchName: branch?.name ?? item.branches.map(({ name }) => name).join(" · "),
         coins: item.coins.toString(),
       })),
-      viewer: viewerIndex < 0 ? null : {
-        rank: viewerIndex + 1,
-        coins: viewerRows[viewerIndex].coins.toString(),
-        nextCoins: viewerRows[viewerIndex - 1]?.coins.toString() ?? null,
-      },
+      viewer,
       ...(branchBreakdownUnavailable && { branchBreakdownUnavailable: true }),
     },
     stale,

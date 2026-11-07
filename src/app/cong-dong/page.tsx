@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RefreshOnLiveUpdates } from "../live-updates";
 import { requireActiveAccount } from "../../lib/auth";
 import { canWriteCommunity, listCommunityComments, listCommunityPosts, parseCommunityPage, POST_LIMIT } from "../../lib/community";
 import { isContentId } from "../../lib/content";
@@ -37,6 +38,7 @@ export default async function CommunityPage({
 
   return (
     <div className={styles.page}>
+      <RefreshOnLiveUpdates topic="community" />
       <header>
         <p className="page-kicker">KÊNH NỘI BỘ ALD</p>
         <h1 className="page-title">Cộng đồng ALD</h1>

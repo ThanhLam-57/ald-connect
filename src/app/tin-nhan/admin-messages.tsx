@@ -4,6 +4,7 @@ import { recordAdminReview } from "../../lib/admin-review";
 import type { Account } from "../../lib/auth";
 import { contentDate, isContentId } from "../../lib/content";
 import { listAdminConversations, readAdminConversation } from "../../lib/messages";
+import { RefreshOnLiveUpdates } from "../live-updates";
 import styles from "./page.module.css";
 
 type Params = Record<string, string | string[] | undefined>;
@@ -37,6 +38,7 @@ export function AdminMessages({ account, params }: { account: Account; params: P
     recordAdminReview(account, "chat", conversation.id);
     return (
       <section className={styles.adminPage}>
+        <RefreshOnLiveUpdates topic="messages" />
         <ConversationHeader title="Nội dung cuộc trò chuyện">Chế độ chỉ xem dành cho Admin.</ConversationHeader>
         <div className={styles.adminCard}>
           <h2>{conversation.nameA} và {conversation.nameB}</h2>
@@ -70,6 +72,7 @@ export function AdminMessages({ account, params }: { account: Account; params: P
   const { conversations, nextBefore } = listAdminConversations(account, before);
   return (
     <section className={styles.adminPage}>
+      <RefreshOnLiveUpdates topic="messages" />
       <ConversationHeader title="Tất cả cuộc trò chuyện">Chế độ chỉ xem dành cho Admin. Chọn một cuộc trò chuyện để đọc nội dung.</ConversationHeader>
       <div className={styles.adminCard}>
         {conversations.length > 0 ? (

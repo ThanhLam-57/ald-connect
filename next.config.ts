@@ -7,7 +7,8 @@ const nextConfig: NextConfig = {
     incomingRequests: { ignore: [/\/(?:kich-hoat|dat-lai-mat-khau)(?:[/?]|$)/] },
   },
   async headers() {
-    return [{ source: "/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] }];
+    // Native form submissions need their origin; activation and reset paths stay out of referrers.
+    return [{ source: "/:path*", headers: [{ key: "Referrer-Policy", value: "strict-origin" }] }];
   },
 };
 

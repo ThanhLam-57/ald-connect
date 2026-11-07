@@ -2,7 +2,9 @@ export type RankScope = "facility" | "company";
 
 export type RankBranch = { id: string; name: string };
 export type RankEntry = { rank: number; name: string; branchName: string; coins: string };
-export type RankViewer = { rank: number; coins: string; nextCoins: string | null };
+export type RankViewer =
+  | { inTop: true; coins: string; rank: number; nextCoins: string | null }
+  | { inTop: false; coins: string | null; coinsToTop: string | null };
 
 export type Leaderboard = {
   scope: RankScope;
