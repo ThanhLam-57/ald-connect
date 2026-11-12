@@ -217,22 +217,32 @@ export function changeOwnCommunityEntry(account: Account, target: CommunityTarge
 }
 
 export function hideCommunityEntry(account: Account, target: CommunityTarget) {
+  return setCommunityEntryHidden(account, target, true);
+}
+
+export function unhideCommunityEntry(account: Account, target: CommunityTarget) {
+  return setCommunityEntryHidden(account, target, false);
+}
+
+function setCommunityEntryHidden(account: Account, target: CommunityTarget, hide: boolean) {
   if (!active(account) || account.role !== "ADMIN") return false;
   const db = getDatabase();
   const { postId, commentId } = target;
+  const hiddenValue = hide ? Date.now() : null;
+  const hiddenState = hide ? "hidden_at IS NULL" : "hidden_at IS NOT NULL";
   return transaction(() => {
     const row = (commentId
       ? db.prepare(`
           UPDATE community_comments SET hidden_at = ?
-          WHERE id = ? AND post_id = ? AND deleted_at IS NULL AND hidden_at IS NULL
+          WHERE id = ? AND post_id = ? AND deleted_at IS NULL AND ${hiddenState}
             AND EXISTS (SELECT 1 FROM community_posts WHERE id = post_id AND deleted_at IS NULL)
           RETURNING author_id, is_anonymous
-        `).get(Date.now(), commentId, postId)
+        `).get(hiddenValue, commentId, postId)
       : db.prepare(`
           UPDATE community_posts SET hidden_at = ?
-          WHERE id = ? AND deleted_at IS NULL AND hidden_at IS NULL
+          WHERE id = ? AND deleted_at IS NULL AND ${hiddenState}
           RETURNING author_id, is_anonymous
-        `).get(Date.now(), postId)) as { author_id: string; is_anonymous: number } | undefined;
+        `).get(hiddenValue, postId)) as { author_id: string; is_anonymous: number } | undefined;
     if (!row) return false;
 
     db.prepare(`
@@ -241,7 +251,7 @@ export function hideCommunityEntry(account: Account, target: CommunityTarget) {
     `).run(
       account.id,
       row.author_id,
-      commentId ? "community_comment_hidden" : "community_post_hidden",
+      (commentId ? "community_comment_" : "community_post_") + (hide ? "hidden" : "unhidden"),
       JSON.stringify({ postId, commentId, anonymous: row.is_anonymous === 1 }),
     );
     return true;

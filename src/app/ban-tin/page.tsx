@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { requireActiveAccount } from "../../lib/auth";
 import feedbackStyles from "../gop-y/page.module.css";
 import { NewsFeed } from "../news-feed";
 import { submitAnnouncement } from "./actions";
+
+export const metadata: Metadata = { title: "Thông báo" };
 
 export default async function AnnouncementsPage({
   searchParams,

@@ -99,6 +99,7 @@ const notices = {
   "comment-removed": "Đã xóa bình luận.",
   edited: "Đã lưu thay đổi.",
   hidden: "Đã ẩn nội dung khỏi cộng đồng.",
+  unhidden: "Đã hiện lại nội dung trong cộng đồng.",
   invalid: "Kiểm tra lại nội dung và giới hạn ký tự.",
 } as const;
 
@@ -166,7 +167,8 @@ function EntryOptions({
 }) {
   const canHide = account.role === "ADMIN";
   const canEdit = parentVisible && canWriteCommunity(account) && entry.isOwn;
-  if (entry.hiddenAt !== null || (!canHide && !canEdit)) return null;
+  const hidden = entry.hiddenAt !== null;
+  if (hidden ? !canHide : !canHide && !canEdit) return null;
 
   const target = (
     <>
@@ -186,7 +188,9 @@ function EntryOptions({
         {canHide ? (
           <form action={changeCommunityEntry}>
             {target}
-            <SubmitButton className={styles.secondary} name="intent" value="hide">Ẩn {label}</SubmitButton>
+            {hidden
+              ? <SubmitButton className={styles.secondary} name="intent" value="unhide">Hiện lại {label}</SubmitButton>
+              : <SubmitButton className={styles.secondary} name="intent" value="hide">Ẩn {label}</SubmitButton>}
           </form>
         ) : (
           <>

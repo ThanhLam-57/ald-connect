@@ -27,6 +27,8 @@ const auditLabels: Record<string, string> = {
   reissue_admin_invite: "Cấp lại đường dẫn kích hoạt Admin",
   community_post_hidden: "Ẩn bài viết cộng đồng",
   community_comment_hidden: "Ẩn bình luận cộng đồng",
+  community_post_unhidden: "Hiện lại bài viết cộng đồng",
+  community_comment_unhidden: "Hiện lại bình luận cộng đồng",
   admin_review_chat: "Xem cuộc trò chuyện",
   admin_review_feedback: "Xem phiếu góp ý",
   admin_review_community: "Xem danh tính trong Cộng đồng",

@@ -14,6 +14,7 @@ import {
   parseCommunityPage,
   POST_LIMIT,
   setCommunityPostLike,
+  unhideCommunityEntry,
 } from "../../lib/community";
 import { communityFeedHref, communityFeedPath, communityPostPath } from "./paths";
 
@@ -90,6 +91,11 @@ export async function changeCommunityEntry(form: FormData) {
     if (!hideCommunityEntry(account, target)) notFound();
     refreshPost(postId);
     redirect(actionReturn(form, postId, "hidden"));
+  }
+  if (intent === "unhide") {
+    if (!unhideCommunityEntry(account, target)) notFound();
+    refreshPost(postId);
+    redirect(actionReturn(form, postId, "unhidden"));
   }
   if (!canWriteCommunity(account) || (intent !== "edit" && intent !== "delete")) notFound();
 

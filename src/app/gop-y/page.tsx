@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { RefreshOnLiveUpdates } from "../live-updates";
 import { requireActiveAccount } from "../../lib/auth";
@@ -12,6 +13,8 @@ import { completeFeedback, sendFeedbackReply, submitFeedback, takeFeedback } fro
 import { FeedbackReview } from "./feedback-review";
 import { categoryLabel, ticketLabel } from "./labels";
 import styles from "./page.module.css";
+
+export const metadata: Metadata = { title: "Góp ý & hỗ trợ" };
 
 export default async function FeedbackPage({
   searchParams,

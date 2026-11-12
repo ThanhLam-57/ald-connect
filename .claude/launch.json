@@ -1,0 +1,21 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ald-connect",
+      "runtimeExecutable": "pnpm.cmd",
+      "runtimeArgs": ["dev"],
+      "port": 3017
+    },
+    {
+      "name": "ald-connect-test",
+      "runtimeExecutable": "powershell.exe",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-Command",
+        "$env:ALD_CONNECT_DB_PATH='.data/test-connect.sqlite'; pnpm.cmd dev"
+      ],
+      "port": 3017
+    }
+  ]
+}

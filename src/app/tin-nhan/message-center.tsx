@@ -417,6 +417,12 @@ export function MessageCenter({ accountId, initial, initialInbox, initialContact
                   <textarea ref={composer} id="message-body" name="body" rows={1} maxLength={maxLength} value={draft} readOnly={sending}
                     onChange={(event) => { setDraft(event.currentTarget.value); setSendError(""); }}
                     onFocus={() => { pinBottom.current = true; if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight; }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                        event.preventDefault();
+                        if (draft.trim() && !sending) event.currentTarget.form?.requestSubmit();
+                      }
+                    }}
                     placeholder="Aa" />
                   <button type="submit" className={styles.sendButton} disabled={sending || !draft.trim()}
                     onPointerDown={(event) => { if (document.activeElement === composer.current) event.preventDefault(); }}

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { RefreshOnLiveUpdates } from "../../live-updates";
 import { notFound } from "next/navigation";
@@ -8,6 +9,8 @@ import { isContentId } from "../../../lib/content";
 import { CommunityComments, CommunityNotice, CommunityPostCard } from "../community-ui";
 import { communityFeedPath } from "../paths";
 import styles from "../community.module.css";
+
+export const metadata: Metadata = { title: "Thảo luận" };
 
 export default async function CommunityThread({
   params,
