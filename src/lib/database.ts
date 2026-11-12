@@ -145,6 +145,14 @@ function migrateCommunityVisibility(connection: DatabaseSync) {
   }
 }
 
+function migrateBranchManager(connection: DatabaseSync) {
+  const exists = connection.prepare("PRAGMA table_info(accounts)").all()
+    .some((column) => column.name === "is_branch_manager");
+  if (exists) return;
+  connection.exec(`ALTER TABLE accounts ADD COLUMN
+    is_branch_manager INTEGER NOT NULL DEFAULT 0 CHECK (is_branch_manager IN (0, 1))`);
+}
+
 export function getDatabase(): DatabaseSync {
   if (database) return database;
 
@@ -167,6 +175,7 @@ export function getDatabase(): DatabaseSync {
         staff_code TEXT,
         workforce_source TEXT,
         branch_code TEXT,
+        is_branch_manager INTEGER NOT NULL DEFAULT 0 CHECK (is_branch_manager IN (0, 1)),
         created_at INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
         updated_at INTEGER NOT NULL DEFAULT (CAST(unixepoch('subsec') * 1000 AS INTEGER)),
         CHECK (
@@ -312,6 +321,7 @@ export function getDatabase(): DatabaseSync {
       ) STRICT;
     `);
     migrateCommunityVisibility(connection);
+    migrateBranchManager(connection);
     installLiveRevisionTracking(connection);
   } catch (error) {
     connection.close();

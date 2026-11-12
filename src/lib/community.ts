@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import type { Account } from "./auth";
+import { managedBranch } from "./branch";
 import { getDatabase, transaction } from "./database";
 
 export const POST_LIMIT = 2_000;
@@ -15,6 +16,9 @@ export type CommunityEntry = {
   authorName: string | null;
   authorRole: Account["role"] | null;
   branchName: string | null;
+  /** Chỉ có khi nội dung không ẩn danh; dùng để xác định quản lý cơ sở có quyền kiểm duyệt. */
+  authorSource: string | null;
+  authorBranchCode: string | null;
   body: string;
   createdAt: number;
   updatedAt: number;
@@ -42,7 +46,27 @@ function authorColumns(entry: "p" | "c") {
     (${entry}.author_id = :viewerId) AS isOwn,
     CASE WHEN ${entry}.is_anonymous = 0 THEN a.display_name END AS authorName,
     CASE WHEN ${entry}.is_anonymous = 0 THEN a.role END AS authorRole,
-    CASE WHEN ${entry}.is_anonymous = 0 THEN COALESCE(b.branch_name, a.branch_code) END AS branchName`;
+    CASE WHEN ${entry}.is_anonymous = 0 THEN COALESCE(b.branch_name, a.branch_code) END AS branchName,
+    CASE WHEN ${entry}.is_anonymous = 0 THEN a.workforce_source END AS authorSource,
+    CASE WHEN ${entry}.is_anonymous = 0 THEN a.branch_code END AS authorBranchCode`;
+}
+
+/** Nội dung có tên của nhân viên thuộc cơ sở mà người xem là quản lý. */
+function branchAuthored(entry: "p" | "c") {
+  return `(:mgrBranch IS NOT NULL AND ${entry}.is_anonymous = 0 AND ${entry}.author_id IN (
+    SELECT id FROM accounts WHERE workforce_source = :mgrSource AND branch_code = :mgrBranch))`;
+}
+function hiddenVisible(entry: "p" | "c") {
+  return `(:viewerRole = 'ADMIN' OR ${entry}.hidden_at IS NULL OR ${branchAuthored(entry)})`;
+}
+function viewerParams(account: Account) {
+  const branch = managedBranch(account);
+  return {
+    viewerRole: account.role,
+    viewerId: account.id,
+    mgrSource: branch?.source ?? null,
+    mgrBranch: branch?.branchCode ?? null,
+  };
 }
 
 const branchJoin = `
@@ -53,10 +77,10 @@ const postColumns = `
   p.hidden_at AS hiddenAt, ${authorColumns("p")},
   (SELECT COUNT(*) FROM community_comments c
    WHERE c.post_id = p.id AND c.deleted_at IS NULL
-     AND (:viewerRole = 'ADMIN' OR c.hidden_at IS NULL)) AS commentCount,
+     AND ${hiddenVisible("c")}) AS commentCount,
   (SELECT COUNT(*) FROM community_post_likes l WHERE l.post_id = p.id) AS likeCount,
   EXISTS (SELECT 1 FROM community_post_likes l WHERE l.post_id = p.id AND l.account_id = :viewerId) AS viewerLiked`;
-const postVisible = "p.deleted_at IS NULL AND (:viewerRole = 'ADMIN' OR p.hidden_at IS NULL)";
+const postVisible = `p.deleted_at IS NULL AND ${hiddenVisible("p")}`;
 const publicParent = "EXISTS (SELECT 1 FROM community_posts WHERE id = post_id AND deleted_at IS NULL AND hidden_at IS NULL)";
 
 function active(account: Account) {
@@ -92,7 +116,7 @@ export function listCommunityPosts(account: Account, page: number) {
     WHERE ${postVisible}
     ORDER BY p.created_at DESC, p.id DESC LIMIT :limit OFFSET :offset
   `).all({
-    viewerRole: account.role, viewerId: account.id, limit: PAGE_SIZE + 1, offset: (page - 1) * PAGE_SIZE,
+    ...viewerParams(account), limit: PAGE_SIZE + 1, offset: (page - 1) * PAGE_SIZE,
   }) as unknown as EntryRow<CommunityPost>[];
   return paginate(rows);
 }
@@ -104,7 +128,7 @@ export function getCommunityPost(account: Account, postId: string) {
     FROM community_posts p JOIN accounts a ON a.id = p.author_id
     ${branchJoin}
     WHERE p.id = :postId AND ${postVisible}
-  `).get({ viewerRole: account.role, viewerId: account.id, postId }) as unknown as EntryRow<CommunityPost> | undefined;
+  `).get({ ...viewerParams(account), postId }) as unknown as EntryRow<CommunityPost> | undefined;
   return row ? projectEntry(row) : null;
 }
 
@@ -118,10 +142,10 @@ export function listCommunityComments(account: Account, postId: string, page: nu
     JOIN accounts a ON a.id = c.author_id
     ${branchJoin}
     WHERE p.id = :postId AND ${postVisible}
-      AND c.deleted_at IS NULL AND (:viewerRole = 'ADMIN' OR c.hidden_at IS NULL)
+      AND c.deleted_at IS NULL AND ${hiddenVisible("c")}
     ORDER BY c.created_at DESC, c.id DESC LIMIT :limit OFFSET :offset
   `).all({
-    viewerRole: account.role, viewerId: account.id, postId, limit: PAGE_SIZE + 1, offset: (page - 1) * PAGE_SIZE,
+    ...viewerParams(account), postId, limit: PAGE_SIZE + 1, offset: (page - 1) * PAGE_SIZE,
   }) as unknown as EntryRow<CommunityEntry>[];
   return paginate(rows);
 }
@@ -225,24 +249,30 @@ export function unhideCommunityEntry(account: Account, target: CommunityTarget) 
 }
 
 function setCommunityEntryHidden(account: Account, target: CommunityTarget, hide: boolean) {
-  if (!active(account) || account.role !== "ADMIN") return false;
+  const branch = managedBranch(account);
+  const isAdmin = account.role === "ADMIN";
+  if (!active(account) || (!isAdmin && !branch)) return false;
   const db = getDatabase();
   const { postId, commentId } = target;
   const hiddenValue = hide ? Date.now() : null;
   const hiddenState = hide ? "hidden_at IS NULL" : "hidden_at IS NOT NULL";
+  // Quản lý cơ sở chỉ kiểm duyệt nội dung có tên của nhân viên cơ sở mình, không bao giờ nội dung ẩn danh và không phải của chính mình.
+  const scope = `(? = 1 OR (is_anonymous = 0 AND author_id <> ? AND author_id IN (
+    SELECT id FROM accounts WHERE workforce_source = ? AND branch_code = ?)))`;
+  const scopeParams = [isAdmin ? 1 : 0, account.id, branch?.source ?? null, branch?.branchCode ?? null] as const;
   return transaction(() => {
     const row = (commentId
       ? db.prepare(`
           UPDATE community_comments SET hidden_at = ?
-          WHERE id = ? AND post_id = ? AND deleted_at IS NULL AND ${hiddenState}
+          WHERE id = ? AND post_id = ? AND deleted_at IS NULL AND ${hiddenState} AND ${scope}
             AND EXISTS (SELECT 1 FROM community_posts WHERE id = post_id AND deleted_at IS NULL)
           RETURNING author_id, is_anonymous
-        `).get(hiddenValue, commentId, postId)
+        `).get(hiddenValue, commentId, postId, ...scopeParams)
       : db.prepare(`
           UPDATE community_posts SET hidden_at = ?
-          WHERE id = ? AND deleted_at IS NULL AND ${hiddenState}
+          WHERE id = ? AND deleted_at IS NULL AND ${hiddenState} AND ${scope}
           RETURNING author_id, is_anonymous
-        `).get(hiddenValue, postId)) as { author_id: string; is_anonymous: number } | undefined;
+        `).get(hiddenValue, postId, ...scopeParams)) as { author_id: string; is_anonymous: number } | undefined;
     if (!row) return false;
 
     db.prepare(`

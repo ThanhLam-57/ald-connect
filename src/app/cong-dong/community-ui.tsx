@@ -165,7 +165,10 @@ function EntryOptions({
   parentVisible: boolean;
   comment?: boolean;
 }) {
-  const canHide = account.role === "ADMIN";
+  const canHide = account.role === "ADMIN" || Boolean(
+    account.role === "LIVE" && account.isBranchManager && !entry.isOwn && !entry.isAnonymous &&
+    entry.authorSource === account.workforceSource && entry.authorBranchCode === account.branchCode,
+  );
   const canEdit = parentVisible && canWriteCommunity(account) && entry.isOwn;
   const hidden = entry.hiddenAt !== null;
   if (hidden ? !canHide : !canHide && !canEdit) return null;

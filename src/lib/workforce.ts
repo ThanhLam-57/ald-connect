@@ -200,6 +200,30 @@ export async function getWorkforceDirectory(verify = false) {
   };
 }
 
+export type BranchRosterEntry = {
+  staffCode: string;
+  name: string;
+  /** Số xu tháng này; null khi nhân viên làm ở nhiều cơ sở và Workforce không tách số xu theo cơ sở. */
+  coins: string | null;
+};
+
+export async function readBranchRoster(branchId: string, source: string) {
+  const { snapshot, stale, source: currentSource } = await readSnapshot();
+  if (currentSource !== source) return null;
+  const branch = snapshot.branches.find(({ id }) => id === branchId) ?? null;
+  if (!branch) return null;
+
+  const staff = snapshot.items
+    .filter((item) => item.branches.some(({ id }) => id === branch.id))
+    .map((item) => ({ item, coins: employeeCoins(item, branch) }))
+    .map(({ item, coins }): BranchRosterEntry => ({
+      staffCode: item.staffCode,
+      name: item.name,
+      coins: coins === null ? null : coins.toString(),
+    }));
+  return { branch, staff, asOf: snapshot.generatedAt, stale };
+}
+
 export async function readWorkforceLeaderboard(
   scope: RankScope,
   { branchId, staffCode, canChooseBranch = false }: {

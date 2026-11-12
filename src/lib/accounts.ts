@@ -24,6 +24,7 @@ type ManagedAccount = {
   staffCode: string | null;
   workforceSource: string | null;
   branchCode: string | null;
+  isBranchManager: number;
   updatedAt: number;
 };
 
@@ -31,6 +32,7 @@ type AccountChange =
   | { intent: "create"; username: string; displayName: string; role: string }
   | { intent: "role"; accountId: string; role: string }
   | { intent: "link"; accountId: string; source: string; staffCode: string; branchCode: string }
+  | { intent: "manager"; accountId: string; enabled: boolean }
   | { intent: "lock" | "unlock" | "invite" | "reset" | "revoke" | "unlink"; accountId: string };
 
 type ChangeResult = {
@@ -40,7 +42,8 @@ type ChangeResult = {
 
 const accountFields = `id, username, display_name AS displayName, role, disabled,
   password_hash IS NOT NULL AS hasPassword, staff_code AS staffCode,
-  workforce_source AS workforceSource, branch_code AS branchCode, updated_at AS updatedAt`;
+  workforce_source AS workforceSource, branch_code AS branchCode,
+  is_branch_manager AS isBranchManager, updated_at AS updatedAt`;
 
 function readAccount(id: string) {
   return getDatabase().prepare(`SELECT ${accountFields} FROM accounts WHERE id = ?`).get(id) as ManagedAccount | undefined;
@@ -206,7 +209,7 @@ export async function changeManagedAccount(input: AccountChange): Promise<Change
         if (!validRole(input.role)) throw new AccountManagementError("Chọn một trong ba vai trò được hỗ trợ.");
         if (target.role === input.role) return { message: "Tài khoản đang có vai trò đã chọn." };
         protectLastAdmin(target);
-        db.prepare("UPDATE accounts SET role = ?, updated_at = ? WHERE id = ?")
+        db.prepare("UPDATE accounts SET role = ?, is_branch_manager = 0, updated_at = ? WHERE id = ?")
           .run(input.role, Date.now(), target.id);
         revokeCredentials(target.id);
         record(actor.id, target.id, "role_changed", { previous: target.role, role: input.role });
@@ -226,21 +229,43 @@ export async function changeManagedAccount(input: AccountChange): Promise<Change
           protectLastAdmin(target);
         }
         checkLinkAvailable(target.id, input.source, input.staffCode);
+        const managerCleared = Boolean(target.isBranchManager) &&
+          (Boolean(reassigning) || target.branchCode !== input.branchCode);
         db.prepare(`
           UPDATE accounts
           SET workforce_source = ?, staff_code = ?, branch_code = ?,
-              password_hash = CASE WHEN ? THEN NULL ELSE password_hash END, updated_at = ?
+              password_hash = CASE WHEN ? THEN NULL ELSE password_hash END,
+              is_branch_manager = CASE WHEN ? THEN 0 ELSE is_branch_manager END, updated_at = ?
           WHERE id = ?
-        `).run(input.source, input.staffCode, input.branchCode, reassigning ? 1 : 0, Date.now(), target.id);
+        `).run(input.source, input.staffCode, input.branchCode, reassigning ? 1 : 0, managerCleared ? 1 : 0, Date.now(), target.id);
         revokeCredentials(target.id);
         record(actor.id, target.id, "workforce_link_changed", {
           previous: { source: target.workforceSource, staffCode: target.staffCode, branchCode: target.branchCode },
           current: { source: input.source, staffCode: input.staffCode, branchCode: input.branchCode },
           passwordCleared: Boolean(reassigning),
+          managerCleared,
         });
         return { message: reassigning
           ? "Đã đổi nhân viên liên kết. Cấp đường dẫn kích hoạt mới để nhân viên đặt mật khẩu."
           : "Đã lưu liên kết Workforce và thu hồi các phiên của tài khoản." };
+      }
+      case "manager": {
+        requireAdmin(actor);
+        if (target.role !== "LIVE" || !hasWorkforceLink(target)) {
+          throw new AccountManagementError("Chỉ tài khoản Nhân viên Live đã gắn Workforce mới làm được quản lý cơ sở.");
+        }
+        if (input.enabled && target.disabled) {
+          throw new AccountManagementError("Mở khóa tài khoản trước khi cấp quyền quản lý cơ sở.");
+        }
+        if (Boolean(target.isBranchManager) === input.enabled) {
+          return { message: input.enabled ? "Tài khoản đã là quản lý cơ sở." : "Tài khoản không phải quản lý cơ sở." };
+        }
+        db.prepare("UPDATE accounts SET is_branch_manager = ?, updated_at = ? WHERE id = ?")
+          .run(input.enabled ? 1 : 0, Date.now(), target.id);
+        record(actor.id, target.id, input.enabled ? "branch_manager_granted" : "branch_manager_revoked", {
+          source: target.workforceSource, branchCode: target.branchCode,
+        });
+        return { message: input.enabled ? "Đã cấp quyền quản lý cơ sở." : "Đã thu hồi quyền quản lý cơ sở." };
       }
       case "unlink": {
         requireAdmin(actor);
@@ -251,7 +276,7 @@ export async function changeManagedAccount(input: AccountChange): Promise<Change
         protectLastAdmin(target);
         db.prepare(`
           UPDATE accounts SET workforce_source = NULL, staff_code = NULL, branch_code = NULL,
-                              password_hash = NULL, updated_at = ? WHERE id = ?
+                              password_hash = NULL, is_branch_manager = 0, updated_at = ? WHERE id = ?
         `).run(Date.now(), target.id);
         revokeCredentials(target.id);
         record(actor.id, target.id, "workforce_link_removed", {

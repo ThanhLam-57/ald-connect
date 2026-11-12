@@ -14,13 +14,14 @@ const iconPaths = {
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
 };
 
-type NavPage = { href: string; label: string; icon: keyof typeof iconPaths; roles: Role[] };
+type NavPage = { href: string; label: string; icon: keyof typeof iconPaths; roles: Role[]; managerOnly?: boolean };
 
 const pages: NavPage[] = [
   { href: "/cong-dong", label: "Cộng đồng", icon: "feed", roles: ["ADMIN", "HCNS", "LIVE"] },
   { href: "/ban-tin", label: "Thông báo HCNS", icon: "feed", roles: ["ADMIN", "HCNS", "LIVE"] },
   { href: "/dong-nghiep", label: "Đồng nghiệp", icon: "people", roles: ["ADMIN", "HCNS", "LIVE"] },
   { href: "/tin-nhan", label: "Tin nhắn", icon: "message", roles: ["ADMIN", "HCNS", "LIVE"] },
+  { href: "/co-so-cua-toi", label: "Cơ sở của tôi", icon: "people", roles: ["LIVE"], managerOnly: true },
   { href: "/tai-khoan", label: "Tài khoản", icon: "building", roles: ["ADMIN", "HCNS"] },
   { href: "/bang-xep-hang/co-so", label: "BXH cơ sở", icon: "trophy", roles: ["ADMIN", "LIVE"] },
   { href: "/bang-xep-hang/toan-ald", label: "BXH toàn ALD", icon: "building", roles: ["ADMIN", "LIVE"] },
@@ -37,10 +38,10 @@ function NavIcon({ icon }: { icon: keyof typeof iconPaths }) {
   );
 }
 
-export function Navigation({ role }: { role: Role }) {
+export function Navigation({ role, isBranchManager = false }: { role: Role; isBranchManager?: boolean }) {
   const pathname = usePathname();
   const menu = useRef<HTMLDetailsElement>(null);
-  const available = pages.filter((page) => page.roles.includes(role));
+  const available = pages.filter((page) => page.roles.includes(role) && (!page.managerOnly || isBranchManager));
   const primary = mobileTabs.flatMap((href) => available.filter((page) => page.href === href));
   const secondary = available.filter((page) => !mobileTabs.includes(page.href));
   const isCurrent = (page: NavPage) => pathname === page.href || pathname.startsWith(page.href + "/");

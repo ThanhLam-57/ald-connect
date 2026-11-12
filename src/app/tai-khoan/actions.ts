@@ -30,6 +30,9 @@ export async function manageAccount(_: AccountActionState, data: FormData): Prom
       case "link":
         result = await changeManagedAccount({ intent, accountId, source: field("source"), staffCode: field("staffCode"), branchCode: field("branchCode") });
         break;
+      case "manager":
+        result = await changeManagedAccount({ intent, accountId, enabled: field("enabled") === "yes" });
+        break;
       case "lock":
       case "unlock":
       case "invite":

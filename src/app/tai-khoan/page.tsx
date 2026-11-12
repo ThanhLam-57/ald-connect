@@ -27,6 +27,8 @@ const auditLabels: Record<string, string> = {
   reissue_admin_invite: "Cấp lại đường dẫn kích hoạt Admin",
   community_post_hidden: "Ẩn bài viết cộng đồng",
   community_comment_hidden: "Ẩn bình luận cộng đồng",
+  branch_manager_granted: "Cấp quyền quản lý cơ sở",
+  branch_manager_revoked: "Thu hồi quyền quản lý cơ sở",
   community_post_unhidden: "Hiện lại bài viết cộng đồng",
   community_comment_unhidden: "Hiện lại bình luận cộng đồng",
   admin_review_chat: "Xem cuộc trò chuyện",
@@ -235,6 +237,25 @@ export default async function AccountsPage({ searchParams }: { searchParams: Sea
               </section>
             )}
             {admin && <WorkforceLink account={selected} query={query} />}
+            {admin && selected.role === "LIVE" && hasWorkforceLink(selected) && (
+              <section className={styles.detailsSection} aria-labelledby="manager-heading">
+                <h3 id="manager-heading">Quản lý cơ sở</h3>
+                <p>
+                  {selected.isBranchManager
+                    ? "Tài khoản đang là quản lý của cơ sở mình được gắn: xem danh sách nhân viên, doanh số từng người, tình trạng xác nhận thông báo và ẩn/hiện nội dung có tên của nhân viên cơ sở."
+                    : "Cấp quyền để tài khoản này quản lý cơ sở đang được gắn (mỗi quản lý một cơ sở)."}
+                </p>
+                <AccountActionForm
+                  key={`manager:${selected.updatedAt}`}
+                  intent="manager"
+                  accountId={selected.id}
+                  label={selected.isBranchManager ? "Thu hồi quyền quản lý cơ sở" : "Cấp quyền quản lý cơ sở"}
+                  tone={selected.isBranchManager ? "danger" : "primary"}
+                >
+                  <input type="hidden" name="enabled" value={selected.isBranchManager ? "no" : "yes"} />
+                </AccountActionForm>
+              </section>
+            )}
 
             <section className={styles.detailsSection} aria-labelledby="login-heading">
               <h3 id="login-heading">Truy cập và mật khẩu</h3>

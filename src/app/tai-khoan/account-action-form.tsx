@@ -5,7 +5,7 @@ import { manageAccount } from "./actions";
 import styles from "./page.module.css";
 
 type Props = {
-  intent: "create" | "role" | "link" | "lock" | "unlock" | "invite" | "reset" | "revoke" | "unlink";
+  intent: "create" | "role" | "link" | "manager" | "lock" | "unlock" | "invite" | "reset" | "revoke" | "unlink";
   accountId?: string;
   label: string;
   tone?: "primary" | "secondary" | "danger";

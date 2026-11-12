@@ -15,6 +15,7 @@ export type Account = {
   staffCode: string | null;
   workforceSource: string | null;
   branchCode: string | null;
+  isBranchManager: boolean;
 };
 export type AccountTokenKind = "invite" | "reset";
 
@@ -27,10 +28,11 @@ type AccountRow = {
   staff_code: string | null;
   workforce_source: string | null;
   branch_code: string | null;
+  is_branch_manager: number;
   password_hash: string | null;
 };
 
-const ACCOUNT_COLUMNS = "a.id, a.username, a.display_name, a.role, a.disabled, a.staff_code, a.workforce_source, a.branch_code";
+const ACCOUNT_COLUMNS = "a.id, a.username, a.display_name, a.role, a.disabled, a.staff_code, a.workforce_source, a.branch_code, a.is_branch_manager";
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const USERNAME_PATTERN = /^[a-z0-9._-]{3,48}$/;
 const GLOBAL_LOGIN_BUCKET = "global:login";
@@ -49,6 +51,7 @@ function toAccount(row: AccountRow | undefined): Account | null {
     staffCode: row.staff_code,
     workforceSource: row.workforce_source,
     branchCode: row.branch_code,
+    isBranchManager: row.is_branch_manager === 1,
   };
 }
 

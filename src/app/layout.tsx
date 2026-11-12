@@ -25,7 +25,9 @@ function Wordmark({ mobile = false }: { mobile?: boolean }) {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const account = await getAccount();
   const pending = account?.role === "LIVE" && (!account.staffCode || !account.branchCode || !account.workforceSource);
-  const roleLabel = account && { ADMIN: "Admin", HCNS: "Hành chính nhân sự", LIVE: "Nhân viên Live" }[account.role];
+  const roleLabel = account && (account.role === "LIVE" && account.isBranchManager
+    ? "Quản lý cơ sở"
+    : { ADMIN: "Admin", HCNS: "Hành chính nhân sự", LIVE: "Nhân viên Live" }[account.role]);
   const showNavigation = Boolean(account && !pending);
 
   return (
@@ -35,7 +37,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <div className="workspace" data-has-navigation={showNavigation}>
           <aside className="sidebar">
             <Wordmark />
-            {account && showNavigation && <Navigation role={account.role} />}
+            {account && showNavigation && <Navigation role={account.role} isBranchManager={account.isBranchManager} />}
           </aside>
 
           <div className="work-area">
